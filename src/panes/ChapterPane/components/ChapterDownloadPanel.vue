@@ -69,6 +69,31 @@ watchEffect(() => {
   }
 })
 
+// 全选当前分组中所有可选(未下载、未在下载中)的章节
+function checkAllChapters() {
+  currentGroup.value
+    ?.filter((chapter) => isChapterSelectable(chapter))
+    .forEach((chapter) => checkedIds.value.add(chapter.chapterUuid))
+}
+
+// 反选当前分组中所有可选(未下载、未在下载中)的章节
+function invertCheckedChapters() {
+  currentGroup.value
+    ?.filter((chapter) => isChapterSelectable(chapter))
+    .forEach((chapter) => {
+      if (checkedIds.value.has(chapter.chapterUuid)) {
+        checkedIds.value.delete(chapter.chapterUuid)
+      } else {
+        checkedIds.value.add(chapter.chapterUuid)
+      }
+    })
+}
+
+// 当前分组是否存在可选(未下载、未在下载中)的章节
+const hasSelectableChapters = computed(
+  () => currentGroup.value?.some((chapter) => isChapterSelectable(chapter)) ?? false,
+)
+
 // 提取章节id
 function extractIds(elements: Element[]): string[] {
   return elements
@@ -130,6 +155,16 @@ const dropdownOptions: DropdownOption[] = [
     props: {
       onClick: () => {
         currentGroup.value?.filter((c) => isChapterSelectable(c)).forEach((c) => checkedIds.value.add(c.chapterUuid))
+        dropdownShowing.value = false
+      },
+    },
+  },
+  {
+    label: '反选',
+    key: 'invert check',
+    props: {
+      onClick: () => {
+        invertCheckedChapters()
         dropdownShowing.value = false
       },
     },
@@ -232,7 +267,9 @@ const ChapterCheckbox = defineComponent({
         <n-radio-button value="download">下载</n-radio-button>
         <n-radio-button value="export">导出</n-radio-button>
       </n-radio-group>
-      <n-button class="ml-auto" size="small" @click="props.reload">刷新</n-button>
+      <n-button class="ml-auto" size="small" :disabled="!hasSelectableChapters" @click="checkAllChapters">全选</n-button>
+      <n-button size="small" :disabled="!hasSelectableChapters" @click="invertCheckedChapters">反选</n-button>
+      <n-button size="small" @click="props.reload">刷新</n-button>
       <n-button size="small" type="primary" @click="downloadCheckedChapters">下载勾选章节</n-button>
     </div>
 
